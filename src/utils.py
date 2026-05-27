@@ -4,9 +4,14 @@
 
 import json
 import os
+import requests
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
+ALPHA_VANTAGE_KEY = os.getenv("ALPHA_VANTAGE_KEY")
 
 
 def read_excel_operations(file_path: str) -> List[Dict[str, Any]]:
@@ -60,25 +65,35 @@ def get_greeting() -> str:
         return "Доброй ночи"
 
 
-def read_json(file_path: str) -> List[Dict[str, Any]]:
-    """
-    Читает JSON-файл и возвращает список словарей с транзакциями.
-
-    Args:
-        file_path: Путь к JSON-файлу
-
-    Returns:
-        Список словарей. При ошибке, пустом файле или не-списке — пустой список.
-    """
-    if not os.path.exists(file_path):
-        return []
-
+def get_currency_rates(currencies: list) -> list:
+    """Получает курсы валют через публичное API."""
+    rates = []
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        response = requests.get('https://api.exchangerate-api.com/v4/latest/USD', timeout=5)
+        data = response.json()
+        for curr in currencies:
+            rate = data.get('rates', {}).get(curr, 0)
+            rates.append({"currency": curr, "rate": round(rate, 2)})
+    except Exception:
+        # Заглушка при ошибке API
+        for curr in currencies:
+            rates.append({"currency": curr, "rate": 0.0})
+    return rates
 
-        if isinstance(data, list):
-            return data
-        return []
-    except (json.JSONDecodeError, IOError):
-        return []
+
+def get_stock_prices(stocks: list) -> list:
+    """Получает реальные цены акций через Alpha Vantage API."""
+    prices = []
+    for stock in stocks:
+        try:
+            url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={stock}&apikey={ALPHA_VANTAGE_KEY}"
+            response = requests.get(url, timeout=5)
+            data = response.json()
+            if "Global Quote" in data and "05. price" in data["Global Quote"]:
+                price = float(data["Global Quote"]["05. price"])
+                prices.append({"stock": stock, "price": round(price, 2)})
+            else:
+                prices.append({"stock": stock, "price": 0.0})
+        except Exception:
+            prices.append({"stock": stock, "price": 0.0})
+    return prices

@@ -13,41 +13,13 @@ ALPHA_VANTAGE_KEY = os.getenv("ALPHA_VANTAGE_KEY")
 sys.path.append(str(Path(__file__).parent.parent))
 
 import json
-from src.utils import read_excel_operations, filter_by_date_range, get_greeting
-
-
-def get_currency_rates(currencies: list) -> list:
-    """Получает курсы валют через публичное API."""
-    rates = []
-    try:
-        response = requests.get('https://api.exchangerate-api.com/v4/latest/USD', timeout=5)
-        data = response.json()
-        for curr in currencies:
-            rate = data.get('rates', {}).get(curr, 0)
-            rates.append({"currency": curr, "rate": round(rate, 2)})
-    except Exception:
-        # Заглушка при ошибке API
-        for curr in currencies:
-            rates.append({"currency": curr, "rate": 0.0})
-    return rates
-
-
-def get_stock_prices(stocks: list) -> list:
-    """Получает реальные цены акций через Alpha Vantage API."""
-    prices = []
-    for stock in stocks:
-        try:
-            url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={stock}&apikey={ALPHA_VANTAGE_KEY}"
-            response = requests.get(url, timeout=5)
-            data = response.json()
-            if "Global Quote" in data and "05. price" in data["Global Quote"]:
-                price = float(data["Global Quote"]["05. price"])
-                prices.append({"stock": stock, "price": round(price, 2)})
-            else:
-                prices.append({"stock": stock, "price": 0.0})
-        except Exception:
-            prices.append({"stock": stock, "price": 0.0})
-    return prices
+from src.utils import (
+    read_excel_operations,
+    filter_by_date_range,
+    get_greeting,
+    get_currency_rates,
+    get_stock_prices
+)
 
 
 def main_page(date_time_str: str) -> str:
@@ -186,4 +158,3 @@ def events_page(date_time_str: str, period: str = 'M') -> str:
 if __name__ == "__main__":
     # print(main_page("2021-12-31 23:59:59"))
     print(events_page("2021-12-31 23:59:59", period='M'))
-
