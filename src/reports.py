@@ -50,4 +50,3 @@ if __name__ == "__main__":
     # Пример вызова
     data = read_excel_operations('data/operations.xlsx')
     print(spending_by_category(data, "Супермаркеты", "2021-12-31"))
-
